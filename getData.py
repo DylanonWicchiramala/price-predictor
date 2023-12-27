@@ -112,7 +112,10 @@ class preprocessor():
         n_X = []
         n_y = []
         for i in range(len(X)):
-            x, y = X[i][:-1*number_y], [X[i][-1*number_y:][0][:4]]
+            if number_y==0:
+                x, y = X[i][:], [X[i][-1:][0][:4]]
+            else:
+                x, y = X[i][:-1*number_y], [X[i][-1*number_y:][0][:4]]
             n_X.append(x)
             n_y.append(y)
         return n_X, n_y
