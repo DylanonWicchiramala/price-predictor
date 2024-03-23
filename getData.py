@@ -29,9 +29,6 @@ class preprocessor():
         'win_size':31,
         'stride':1,
         'number_y':1,
-        'split':False,
-        'random_state':420,
-        'test_size':0.2,
         'features_x':['High_delta', 'Low_delta', 'Close_delta', 'RSI_14', 'WMA_100_delta', 'WMA_200_delta'], 
         'features_y':['Close_delta'],
         'convert_to_torch':False,
@@ -41,10 +38,7 @@ class preprocessor():
         self.dataframe = dataframe
         self.preprocess_param=preprocess_param
         
-        if preprocess_param['split']:
-            dataset = self.train_test_split(test_size=preprocess_param['test_size'], random_state=preprocess_param['random_state'])
-            dataset['original'] = self.dataset
-            self.dataset = dataset
+        self.date, self.dataset = self.preprocessing(self.dataframe, preprocess_param)
         
     
     def __call__(self):
@@ -136,21 +130,23 @@ class preprocessor():
         # Split data into the same windows size.
         pw = self.windows_split(p_norm, win_size=param['win_size'], stride=param['stride'])
         
+        date = [w['Date'] for w in pw]
+        
         if param['number_y']!=0:
             X, y = self.split_X_y(pw, num_y=param['number_y'])
-            X = self.feature_select(X, param['feature_x'])
-            y = self.feature_select(y, param['feature_y'])
+            X = self.feature_select(X, param['features_x'])
+            y = self.feature_select(y, param['features_y'])
             if param['convert_to_torch']:
                 X = self.to_torch(X)
                 y = self.to_torch(y)
-            return X, y
+            return date, (X, y)
         
         else:
-            pw = self.feature_select(pw, param['feature_x'])
+            pw = self.feature_select(pw, param['features_x'])
             if param['convert_to_torch']:
                 pw = self.to_torch(pw)
             
-            return pw
+            return date, pw
     
     
     def feature_select(self, dataset, feature):
@@ -165,16 +161,6 @@ class preprocessor():
         return torch.from_numpy(arr).float()
 
 
-    def train_test_split(self, test_size=0.2, random_state=None):
-        ds_train, ds_test = train_test_split(self.dataset, test_size=test_size, random_state=random_state)
-        
-        dataset = {
-            'train': ds_train,
-            'test': ds_test,
-        }
-        return dataset
-    
-    
 if __name__ == '__main__':
     
     v_preprocess_param = {
